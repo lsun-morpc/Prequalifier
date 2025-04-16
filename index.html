@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>World Cup Pre-Qualifier Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f8f9fa;
+    }
+    h2, h3 {
+      text-align: center;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    .pass {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .tbd {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    .fail {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    select {
+      width: 100%;
+      padding: 5px;
+    }
+    .team-input {
+      width: 80%;
+      margin: 20px auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .team-input input {
+      padding: 5px;
+      width: 90%;
+    }
+    .match-schedule {
+      margin-top: 20px;
+    }
+    .probability {
+      margin: 20px auto;
+      width: 80%;
+    }
+    /* Country suggestion dropdown styles */
+    .team-input-container {
+      position: relative;
+      width: 100%;
+    }
+    .country-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .country-suggestion {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      cursor: pointer;
+    }
+    .country-suggestion:hover {
+      background: #f0f0f0;
+    }
+    .country-suggestion img {
+      width: 24px;
+      height: 16px;
+      object-fit: cover;
+      border-radius: 2px;
+    }
+    .team-flag {
+      width: 24px;
+      height: 16px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <h2>World Cup Pre-Qualifier Score Simulator</h2>
+  
+  <div class="team-input" id="teamInput">
+    <div>
+      <label>Team 1:</label>
+      <div class="team-input-container">
+        <input type="text" id="team0" value="Team A" placeholder="Enter country name" oninput="handleCountryInput(this)">
+        <div class="country-suggestions"></div>
+      </div>
+    </div>
+    <div>
+      <label>Team 2:</label>
+      <div class="team-input-container">
+        <input type="text" id="team1" value="Team B" placeholder="Enter country name" oninput="handleCountryInput(this)">
+        <div class="country-suggestions"></div>
+      </div>
+    </div>
+    <div>
+      <label>Team 3:</label>
+      <div class="team-input-container">
+        <input type="text" id="team2" value="Team C" placeholder="Enter country name" oninput="handleCountryInput(this)">
+        <div class="country-suggestions"></div>
+      </div>
+    </div>
+    <div>
+      <label>Team 4:</label>
+      <div class="team-input-container">
+        <input type="text" id="team3" value="Team D" placeholder="Enter country name" oninput="handleCountryInput(this)">
+        <div class="country-suggestions"></div>
+      </div>
+    </div>
+    <div>
+      <label>Team 5:</label>
+      <div class="team-input-container">
+        <input type="text" id="team4" value="Team E" placeholder="Enter country name" oninput="handleCountryInput(this)">
+        <div class="country-suggestions"></div>
+      </div>
+    </div>
+    <div>
+      <label>Team 6:</label>
+      <div class="team-input-container">
+        <input type="text" id="team5" value="Team F" placeholder="Enter country name" oninput="handleCountryInput(this)">
+        <div class="country-suggestions"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="match-schedule">
+    <h3>Match Schedule</h3>
+    <table id="matchTable">
+      <thead>
+        <tr>
+          <th>Match</th>
+          <th>Home Team</th>
+          <th>Result</th>
+          <th>Away Team</th>
+        </tr>
+      </thead>
+      <tbody id="matchesBody">
+        <!-- Matches inserted by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Team Standings</h3>
+  <table id="scoreTable">
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>MP</th>
+        <th>W</th>
+        <th>D</th>
+        <th>L</th>
+        <th>GF</th>
+        <th>GA</th>
+        <th>GD</th>
+        <th>Pts</th>
+        <th>Status</th>
+        <th>Top 2</th>
+        <th>Top 4</th>
+      </tr>
+    </thead>
+    <tbody id="teamsBody">
+      <!-- Teams inserted by JS -->
+    </tbody>
+  </table>
+
+  <script>
+    // Country data
+    const countries = {
+      "algeria": { name: "Algeria", code: "dz" },
+      "angola": { name: "Angola", code: "ao" },
+      "argentina": { name: "Argentina", code: "ar" },
+      "australia": { name: "Australia", code: "au" },
+      "austria": { name: "Austria", code: "at" },
+      "belgium": { name: "Belgium", code: "be" },
+      "bolivia": { name: "Bolivia", code: "bo" },
+      "brazil": { name: "Brazil", code: "br" },
+      "bulgaria": { name: "Bulgaria", code: "bg" },
+      "cameroon": { name: "Cameroon", code: "cm" },
+      "canada": { name: "Canada", code: "ca" },
+      "chile": { name: "Chile", code: "cl" },
+      "china": { name: "China PR", code: "cn" },
+      "colombia": { name: "Colombia", code: "co" },
+      "costarica": { name: "Costa Rica", code: "cr" },
+      "croatia": { name: "Croatia", code: "hr" },
+      "cuba": { name: "Cuba", code: "cu" },
+      "czechrepublic": { name: "Czech Republic", code: "cz" },
+      "denmark": { name: "Denmark", code: "dk" },
+      "ecuador": { name: "Ecuador", code: "ec" },
+      "egypt": { name: "Egypt", code: "eg" },
+      "elsalvador": { name: "El Salvador", code: "sv" },
+      "england": { name: "England", code: "gb-eng" },
+      "france": { name: "France", code: "fr" },
+      "germany": { name: "Germany", code: "de" },
+      "ghana": { name: "Ghana", code: "gh" },
+      "greece": { name: "Greece", code: "gr" },
+      "haiti": { name: "Haiti", code: "ht" },
+      "honduras": { name: "Honduras", code: "hn" },
+      "hungary": { name: "Hungary", code: "hu" },
+      "iceland": { name: "Iceland", code: "is" },
+      "iran": { name: "Iran", code: "ir" },
+      "iraq": { name: "Iraq", code: "iq" },
+      "ireland": { name: "Republic of Ireland", code: "ie" },
+      "israel": { name: "Israel", code: "il" },
+      "italy": { name: "Italy", code: "it" },
+      "ivorycoast": { name: "Ivory Coast", code: "ci" },
+      "jamaica": { name: "Jamaica", code: "jm" },
+      "japan": { name: "Japan", code: "jp" },
+      "mexico": { name: "Mexico", code: "mx" },
+      "morocco": { name: "Morocco", code: "ma" },
+      "netherlands": { name: "Netherlands", code: "nl" },
+      "newzealand": { name: "New Zealand", code: "nz" },
+      "nigeria": { name: "Nigeria", code: "ng" },
+      "northkorea": { name: "North Korea", code: "kp" },
+      "norway": { name: "Norway", code: "no" },
+      "panama": { name: "Panama", code: "pa" },
+      "paraguay": { name: "Paraguay", code: "py" },
+      "peru": { name: "Peru", code: "pe" },
+      "poland": { name: "Poland", code: "pl" },
+      "portugal": { name: "Portugal", code: "pt" },
+      "qatar": { name: "Qatar", code: "qa" },
+      "romania": { name: "Romania", code: "ro" },
+      "russia": { name: "Russia", code: "ru" },
+      "saudiarabia": { name: "Saudi Arabia", code: "sa" },
+      "scotland": { name: "Scotland", code: "gb-sct" },
+      "senegal": { name: "Senegal", code: "sn" },
+      "serbia": { name: "Serbia", code: "rs" },
+      "slovakia": { name: "Slovakia", code: "sk" },
+      "slovenia": { name: "Slovenia", code: "si" },
+      "southafrica": { name: "South Africa", code: "za" },
+      "southkorea": { name: "South Korea", code: "kr" },
+      "spain": { name: "Spain", code: "es" },
+      "sweden": { name: "Sweden", code: "se" },
+      "switzerland": { name: "Switzerland", code: "ch" },
+      "tunisia": { name: "Tunisia", code: "tn" },
+      "turkey": { name: "Turkey", code: "tr" },
+      "ukraine": { name: "Ukraine", code: "ua" },
+      "uruguay": { name: "Uruguay", code: "uy" },
+      "usa": { name: "United States", code: "us" },
+      "wales": { name: "Wales", code: "gb-wls" },
+      "yugoslavia": { name: "Yugoslavia", code: "yu" },
+      "zaire": { name: "Zaire", code: "zr" }
+    };
+    
+    // Store team codes for flags
+    const teamCodes = {};
+
+    // Country input handling
+    function handleCountryInput(input) {
+      const container = input.parentElement;
+      const suggestionsDiv = container.querySelector('.country-suggestions');
+      const searchTerm = input.value.toLowerCase();
+
+      if (searchTerm.length < 2) {
+        suggestionsDiv.innerHTML = '';
+        return;
+      }
+
+      const matches = Object.entries(countries).filter(([key, country]) =>
+        key.includes(searchTerm) || country.name.toLowerCase().includes(searchTerm)
+      );
+
+      suggestionsDiv.innerHTML = matches
+        .map(([key, country]) => `
+          <div class="country-suggestion" onclick="selectCountry('${country.name}', '${country.code}', this)">
+            <img src="https://flagcdn.com/w40/${country.code}.png" alt="${country.name} flag">
+            ${country.name}
+          </div>
+        `)
+        .join('');
+    }
+
+    function selectCountry(name, code, element) {
+      const container = element.closest('.team-input-container');
+      const input = container.querySelector('input');
+      const id = input.id;
+      const teamIndex = parseInt(id.replace('team', ''));
+      
+      input.value = name;
+      teamCodes[teamIndex] = code;
+      
+      container.querySelector('.country-suggestions').innerHTML = '';
+      
+      // Auto update after selection
+      updateTeams();
+      calculateProbabilities();
+    }
+
+    // Get country code for a team name
+    function getCountryCode(teamName) {
+      const country = Object.values(countries).find(c => 
+        c.name.toLowerCase() === teamName.toLowerCase()
+      );
+      return country ? country.code : null;
+    }
+
+    let teams = ['Team A', 'Team B', 'Team C', 'Team D', 'Team E', 'Team F'];
+    const outcomes = ['Not Played', 'Home Win', 'Draw', 'Away Win'];
+    
+    // Generate all possible matches (both home and away)
+    const matches = [];
+    for (let i = 0; i < teams.length; i++) {
+      for (let j = 0; j < teams.length; j++) {
+        if (i !== j) {  // Each team plays against all others both home and away
+          matches.push({home: i, away: j});
+        }
+      }
+    }
+
+    function updateTeams() {
+      teams = [];
+      for (let i = 0; i < 6; i++) {
+        const teamName = document.getElementById(`team${i}`).value;
+        teams[i] = teamName || `Team ${i + 1}`;
+        
+        // If no code is stored but the name matches a country, get the code
+        if (!teamCodes[i] && teams[i]) {
+          const code = getCountryCode(teams[i]);
+          if (code) {
+            teamCodes[i] = code;
+          }
+        }
+      }
+      initTable();
+      initMatchTable();
+      calculateScores();
+    }
+
+    function createSelect(id) {
+      const select = document.createElement("select");
+      select.id = id;
+      outcomes.forEach(result => {
+        const option = document.createElement("option");
+        option.value = result;
+        option.text = result;
+        select.appendChild(option);
+      });
+      return select;
+    }
+
+    // Add goal inputs for each match
+    function createGoalInput(id) {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.id = id;
+      input.min = "0";
+      input.value = "";
+      input.placeholder = "0";
+      input.style.width = "40px";
+      input.style.textAlign = "center";
+      return input;
+    }
+
+    function initMatchTable() {
+      const tbody = document.getElementById("matchesBody");
+      tbody.innerHTML = '';
+      matches.forEach((match, idx) => {
+        const row = document.createElement("tr");
+        const homeInput = createGoalInput(`home_goals_${idx}`);
+        const awayInput = createGoalInput(`away_goals_${idx}`);
+        
+        // Add hidden result field
+        const resultInput = document.createElement("input");
+        resultInput.type = "hidden";
+        resultInput.id = `match${idx}`;
+        resultInput.value = "Not Played";
+
+        // Get flags for home and away teams
+        const homeFlag = teamCodes[match.home] ? 
+          `<img src="https://flagcdn.com/w40/${teamCodes[match.home]}.png" alt="${teams[match.home]} flag" class="team-flag">` : '';
+        const awayFlag = teamCodes[match.away] ? 
+          `<img src="https://flagcdn.com/w40/${teamCodes[match.away]}.png" alt="${teams[match.away]} flag" class="team-flag">` : '';
+
+        row.innerHTML = `
+          <td>Match ${idx + 1}</td>
+          <td style="text-align: right; width: 25%;">${homeFlag}${teams[match.home]}</td>
+          <td style="text-align: center; width: 25%;">
+            <div style="display: inline-flex; align-items: center; gap: 5px;">
+              ${homeInput.outerHTML}
+              <span style="font-weight: bold;">:</span>
+              ${awayInput.outerHTML}
+            </div>
+            ${resultInput.outerHTML}
+            <div id="result_text_${idx}" style="min-width: 80px; display: inline-block; margin-left: 10px; color: #666;">Not Played</div>
+          </td>
+          <td style="text-align: left; width: 25%;">${awayFlag}${teams[match.away]}</td>
+        `;
+        tbody.appendChild(row);
+
+        // Add event listeners to update result automatically
+        const updateResult = () => {
+          const homeGoals = parseInt(document.getElementById(`home_goals_${idx}`).value);
+          const awayGoals = parseInt(document.getElementById(`away_goals_${idx}`).value);
+          const resultField = document.getElementById(`match${idx}`);
+          const resultText = document.getElementById(`result_text_${idx}`);
+
+          if (isNaN(homeGoals) && isNaN(awayGoals)) {
+            resultField.value = "Not Played";
+            resultText.textContent = "Not Played";
+          } else if (isNaN(homeGoals) || isNaN(awayGoals)) {
+            resultField.value = "Not Played";
+            resultText.textContent = "Incomplete Score";
+          } else {
+            if (homeGoals > awayGoals) {
+              resultField.value = "Home Win";
+              resultText.textContent = "Home Win";
+            } else if (awayGoals > homeGoals) {
+              resultField.value = "Away Win";
+              resultText.textContent = "Away Win";
+            } else {
+              resultField.value = "Draw";
+              resultText.textContent = "Draw";
+            }
+          }
+          calculateScores();
+          calculateProbabilities();
+        };
+
+        document.getElementById(`home_goals_${idx}`).addEventListener('input', updateResult);
+        document.getElementById(`away_goals_${idx}`).addEventListener('input', updateResult);
+      });
+    }
+
+    function initTable() {
+      const tbody = document.getElementById("teamsBody");
+      tbody.innerHTML = '';
+      teams.forEach((team, i) => {
+        const row = document.createElement("tr");
+        row.id = `teamRow${i}`;
+        
+        // Get flag for team
+        const teamFlag = teamCodes[i] ? 
+          `<img src="https://flagcdn.com/w40/${teamCodes[i]}.png" alt="${team} flag" class="team-flag">` : '';
+        
+        row.innerHTML = `
+          <td>${teamFlag}${team}</td>
+          <td id="played${i}">0</td>
+          <td id="wins${i}">0</td>
+          <td id="draws${i}">0</td>
+          <td id="losses${i}">0</td>
+          <td id="goalsFor${i}">0</td>
+          <td id="goalsAgainst${i}">0</td>
+          <td id="goalDifference${i}">0</td>
+          <td id="points${i}">0</td>
+          <td id="status${i}">-</td>
+          <td id="prob2${i}">-</td>
+          <td id="prob4${i}">-</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function getTeamStats() {
+      const teamStats = teams.map(() => ({
+        played: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalDifference: 0,
+        headToHead: new Map(), // Store head-to-head results
+        yellowCards: 0,  // For fair play (can be added through UI if needed)
+        redCards: 0
+      }));
+
+      matches.forEach((match, idx) => {
+        const result = document.getElementById(`match${idx}`).value;
+        if (result !== 'Not Played') {
+          const homeGoals = parseInt(document.getElementById(`home_goals_${idx}`).value) || 0;
+          const awayGoals = parseInt(document.getElementById(`away_goals_${idx}`).value) || 0;
+          
+          teamStats[match.home].played++;
+          teamStats[match.away].played++;
+          
+          teamStats[match.home].goalsFor += homeGoals;
+          teamStats[match.home].goalsAgainst += awayGoals;
+          teamStats[match.away].goalsFor += awayGoals;
+          teamStats[match.away].goalsAgainst += homeGoals;
+
+          // Store head-to-head result
+          if (!teamStats[match.home].headToHead.has(match.away)) {
+            teamStats[match.home].headToHead.set(match.away, { goalsFor: 0, goalsAgainst: 0, points: 0 });
+            teamStats[match.away].headToHead.set(match.home, { goalsFor: 0, goalsAgainst: 0, points: 0 });
+          }
+
+          if (result === 'Home Win') {
+            teamStats[match.home].wins++;
+            teamStats[match.home].points += 3;
+            teamStats[match.away].losses++;
+            teamStats[match.home].headToHead.get(match.away).points += 3;
+          } else if (result === 'Away Win') {
+            teamStats[match.away].wins++;
+            teamStats[match.away].points += 3;
+            teamStats[match.home].losses++;
+            teamStats[match.away].headToHead.get(match.home).points += 3;
+          } else if (result === 'Draw') {
+            teamStats[match.home].draws++;
+            teamStats[match.away].draws++;
+            teamStats[match.home].points += 1;
+            teamStats[match.away].points += 1;
+            teamStats[match.home].headToHead.get(match.away).points += 1;
+            teamStats[match.away].headToHead.get(match.home).points += 1;
+          }
+
+          // Update head-to-head goals
+          teamStats[match.home].headToHead.get(match.away).goalsFor += homeGoals;
+          teamStats[match.home].headToHead.get(match.away).goalsAgainst += awayGoals;
+          teamStats[match.away].headToHead.get(match.home).goalsFor += awayGoals;
+          teamStats[match.away].headToHead.get(match.home).goalsAgainst += homeGoals;
+        }
+      });
+
+      // Calculate goal differences
+      teamStats.forEach(stats => {
+        stats.goalDifference = stats.goalsFor - stats.goalsAgainst;
+      });
+
+      return teamStats;
+    }
+
+    function compareTeams(teamA, teamB, teamStats) {
+      // 1. Points
+      if (teamA.points !== teamB.points) {
+        return teamB.points - teamA.points;
+      }
+      
+      // 2. Goal difference
+      if (teamA.goalDifference !== teamB.goalDifference) {
+        return teamB.goalDifference - teamA.goalDifference;
+      }
+      
+      // 3. Goals scored
+      if (teamA.goalsFor !== teamB.goalsFor) {
+        return teamB.goalsFor - teamA.goalsFor;
+      }
+      
+      // 4. Head-to-head points
+      const h2h = teamA.headToHead.get(teamB.index);
+      if (h2h) {
+        const h2hPointsA = h2h.points;
+        const h2hPointsB = teamB.headToHead.get(teamA.index)?.points || 0;
+        if (h2hPointsA !== h2hPointsB) {
+          return h2hPointsB - h2hPointsA;
+        }
+        
+        // 5. Head-to-head goal difference
+        const h2hGDA = h2h.goalsFor - h2h.goalsAgainst;
+        const h2hGDB = teamB.headToHead.get(teamA.index)?.goalsFor - teamB.headToHead.get(teamA.index)?.goalsAgainst || 0;
+        if (h2hGDA !== h2hGDB) {
+          return h2hGDB - h2hGDA;
+        }
+        
+        // 6. Head-to-head goals scored
+        if (h2h.goalsFor !== teamB.headToHead.get(teamA.index)?.goalsFor) {
+          return (teamB.headToHead.get(teamA.index)?.goalsFor || 0) - h2h.goalsFor;
+        }
+      }
+      
+      // 7. Fair play points (lower is better)
+      const fairPlayA = teamA.yellowCards + (teamA.redCards * 3);
+      const fairPlayB = teamB.yellowCards + (teamB.redCards * 3);
+      if (fairPlayA !== fairPlayB) {
+        return fairPlayA - fairPlayB;
+      }
+      
+      // 8. Alphabetical order by team name
+      return teams[teamA.index].localeCompare(teams[teamB.index]);
+    }
+
+    function calculateProbabilities() {
+      const teamStats = getTeamStats();
+      const remainingMatches = matches.filter((_, idx) => 
+        document.getElementById(`match${idx}`).value === "Not Played"
+      );
+
+      if (remainingMatches.length === 0) {
+        // All matches played, just show current positions
+        teams.forEach((_, teamIndex) => {
+          const scores = teams.map((_, i) => ({
+            index: i,
+            ...teamStats[i]
+          }));
+          scores.sort((a, b) => compareTeams(a, b, teamStats));
+          const rank = scores.findIndex(score => score.index === teamIndex);
+          
+          document.getElementById(`prob2${teamIndex}`).textContent = 
+            rank < 2 ? "100.0%" : "0.0%";
+          document.getElementById(`prob4${teamIndex}`).textContent = 
+            rank < 4 ? "100.0%" : "0.0%";
+        });
+        return;
+      }
+
+      // Get current points and remaining matches for each team
+      const currentPoints = teams.map((_, i) => teamStats[i].points);
+      const remainingTeamMatches = teams.map((_, i) => 
+        remainingMatches.filter(m => m.home === i || m.away === i)
+      );
+
+      // Calculate all possible outcomes for remaining matches
+      function generateOutcomes(matchIndex = 0, points = [...currentPoints]) {
+        if (matchIndex >= remainingMatches.length) {
+          return [points];
+        }
+
+        const match = remainingMatches[matchIndex];
+        const outcomes = [];
+
+        // Home win
+        const homeWinPoints = [...points];
+        homeWinPoints[match.home] += 3;
+        outcomes.push(...generateOutcomes(matchIndex + 1, homeWinPoints));
+
+        // Draw
+        const drawPoints = [...points];
+        drawPoints[match.home] += 1;
+        drawPoints[match.away] += 1;
+        outcomes.push(...generateOutcomes(matchIndex + 1, drawPoints));
+
+        // Away win
+        const awayWinPoints = [...points];
+        awayWinPoints[match.away] += 3;
+        outcomes.push(...generateOutcomes(matchIndex + 1, awayWinPoints));
+
+        return outcomes;
+      }
+
+      // Generate all possible final standings
+      const allOutcomes = generateOutcomes();
+      const totalOutcomes = allOutcomes.length;
+
+      // Calculate probabilities for each team
+      teams.forEach((_, teamIndex) => {
+        let top2Count = 0;
+        let top4Count = 0;
+
+        // Check if team is mathematically eliminated
+        const maxPossiblePoints = currentPoints[teamIndex] + 
+          (remainingTeamMatches[teamIndex].length * 3);
+        const teamsAboveMax = teams.filter((_, i) => 
+          i !== teamIndex && currentPoints[i] > maxPossiblePoints
+        ).length;
+
+        if (teamsAboveMax >= 4) {
+          // Mathematically eliminated from top 4
+          document.getElementById(`prob2${teamIndex}`).textContent = "0.0%";
+          document.getElementById(`prob4${teamIndex}`).textContent = "0.0%";
+          return;
+        }
+
+        // If not eliminated, calculate exact probabilities
+        allOutcomes.forEach(outcome => {
+          const finalStandings = teams.map((_, i) => ({
+            index: i,
+            points: outcome[i],
+            stats: { ...teamStats[i], points: outcome[i] }
+          }));
+
+          finalStandings.sort((a, b) => compareTeams(a.stats, b.stats, teamStats));
+          const rank = finalStandings.findIndex(team => team.index === teamIndex);
+
+          if (rank < 2) top2Count++;
+          if (rank < 4) top4Count++;
+        });
+
+        const top2Prob = (top2Count / totalOutcomes * 100).toFixed(1);
+        const top4Prob = (top4Count / totalOutcomes * 100).toFixed(1);
+
+        document.getElementById(`prob2${teamIndex}`).textContent = `${top2Prob}%`;
+        document.getElementById(`prob4${teamIndex}`).textContent = `${top4Prob}%`;
+      });
+    }
+
+    function calculateScores() {
+      const teamStats = getTeamStats();
+      const scores = teams.map((team, i) => ({
+        index: i,
+        team,
+        ...teamStats[i]
+      }));
+
+      scores.sort((a, b) => compareTeams(a, b, teamStats));
+
+      // Reorder the table rows according to current standings
+      const tbody = document.getElementById("teamsBody");
+      scores.forEach((entry, rank) => {
+        const row = document.getElementById(`teamRow${entry.index}`);
+        tbody.appendChild(row);
+
+        document.getElementById(`played${entry.index}`).textContent = entry.played;
+        document.getElementById(`wins${entry.index}`).textContent = entry.wins;
+        document.getElementById(`draws${entry.index}`).textContent = entry.draws;
+        document.getElementById(`losses${entry.index}`).textContent = entry.losses;
+        document.getElementById(`goalsFor${entry.index}`).textContent = entry.goalsFor;
+        document.getElementById(`goalsAgainst${entry.index}`).textContent = entry.goalsAgainst;
+        document.getElementById(`goalDifference${entry.index}`).textContent = entry.goalDifference;
+        document.getElementById(`points${entry.index}`).textContent = entry.points;
+        const statusCell = document.getElementById(`status${entry.index}`);
+
+        row.classList.remove("pass", "tbd", "fail");
+
+        if (rank < 2) {
+          statusCell.textContent = "✅ Pass";
+          row.classList.add("pass");
+        } else if (rank < 4) {
+          statusCell.textContent = "🟡 TBD";
+          row.classList.add("tbd");
+        } else {
+          statusCell.textContent = "❌ Fail";
+          row.classList.add("fail");
+        }
+      });
+    }
+
+    // Update addMatchListeners to only handle goal inputs
+    function addMatchListeners() {
+      matches.forEach((_, idx) => {
+        const elements = [
+          document.getElementById(`home_goals_${idx}`),
+          document.getElementById(`away_goals_${idx}`)
+        ];
+        elements.forEach(element => {
+          if (element) {
+            element.addEventListener('change', () => {
+              calculateScores();
+              calculateProbabilities();
+            });
+          }
+        });
+      });
+    }
+
+    // Initialize the application
+    initTable();
+    initMatchTable();
+    addMatchListeners();
+    calculateProbabilities();
+  </script>
+</body>
+</html>
